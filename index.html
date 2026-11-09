@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Golf Distance</title>
+<style>
+body { font-family: -apple-system, sans-serif; margin: 0; padding: 16px; background: #fff; color: #000; max-width: 520px; margin: 0 auto; }
+h1 { font-size: 22px; }
+#distance { width: 100%; font-size: 72px; text-align: center; border: 3px solid #000; border-radius: 12px; padding: 10px; }
+button { min-height: 48px; font-size: 20px; margin: 4px; }
+.card { border: 2px solid #000; border-radius: 12px; padding: 12px; margin: 8px 0; }
+.club { font-size: 48px; font-weight: 900; }
+</style>
+</head>
+<body>
+<h1>Golf Distance</h1>
+<input id="distance" type="number" placeholder="metres" inputmode="numeric">
+<div>
+<button onclick="setMode('carry')">Carry</button>
+<button onclick="setMode('total')">Total</button>
+</div>
+<div id="results"></div>
+<script>
+const SHOTS = [{"total_m":230,"carry_m":180,"club":"Driver","hand_position":"9 Deltoid"},{"total_m":190,"carry_m":165,"club":"4 wood","hand_position":"9 Deltoid"},{"total_m":170,"carry_m":140,"club":"Hybrid","hand_position":"9 Deltoid"},{"total_m":140,"carry_m":130,"club":"5i","hand_position":"9 Deltoid"},{"total_m":130,"carry_m":110,"club":"7i","hand_position":"8 Pit"},{"total_m":115,"carry_m":100,"club":"9i","hand_position":"9 Deltoid"},{"total_m":95,"carry_m":85,"club":"48°","hand_position":"9 Deltoid"},{"total_m":80,"carry_m":70,"club":"48°","hand_position":"8 Pit"},{"total_m":70,"carry_m":64,"club":"52°","hand_position":"8 Pit"},{"total_m":61,"carry_m":50,"club":"9i","hand_position":"6 Ribs Low"},{"total_m":50,"carry_m":44,"club":"52°","hand_position":"5 Waist"},{"total_m":40,"carry_m":37,"club":"56°","hand_position":"5 Waist"},{"total_m":30,"carry_m":21,"club":"8i","hand_position":"4 Belt"},{"total_m":20,"carry_m":15,"club":"52°","hand_position":"2 Femur"},{"total_m":10,"carry_m":7,"club":"56°","hand_position":"0 Address"}];
+let mode = 'carry';
+function setMode(m) { mode = m; render(); }
+function render() {
+  const t = parseInt(document.getElementById('distance').value) || 0;
+  if (!t) { document.getElementById('results').innerHTML = ''; return; }
+  const matches = SHOTS.filter(s => Math.abs((mode==='carry'?s.carry_m:s.total_m) - t) <= 5);
+  document.getElementById('results').innerHTML = matches.map(s => `<div class="card"><div class="club">${s.club}</div><div>${s.hand_position}</div><div>C ${s.carry_m} · T ${s.total_m}</div></div>`).join('') || '<div>No match</div>';
+}
+document.getElementById('distance').oninput = render;
+</script>
+</body>
+</html>
