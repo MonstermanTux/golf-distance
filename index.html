@@ -14,12 +14,12 @@ h1 { font-size: 22px; }
 button { min-height: 48px; font-size: 20px; margin: 4px; }
 button.active { background: #000; color: #fff; }
 #close-kb { background: #eee; color: #000; font-size: 16px; min-height: 40px; }
-.card { border: 2px solid #000; border-radius: 12px; padding: 12px; margin: 8px 0; }
+.card { border: 2px solid #000; border-radius: 12px; padding: 10px; margin: 6px 0; }
 .card.over { border-color: #c00; background: #fff0f0; color: #c00; }
 .card.over .club, .card.over .delta { color: #c00; }
-.club { font-size: 48px; font-weight: 900; }
+.club { font-size: 36px; font-weight: 900; }
 .delta { font-size: 14px; color: #555; }
-.mode-label { font-weight: bold; margin-bottom: 4px; }
+.mode-label { font-weight: bold; margin-bottom: 4px; font-size: 16px; }
 </style>
 </head>
 <body>
@@ -49,10 +49,10 @@ function render() {
   if (!t) { document.getElementById('results').innerHTML = ''; return; }
   const key = mode === 'carry' ? 'carry_m' : 'total_m';
   const scored = SHOTS.map(s => ({...s, diff: Math.abs(s[key] - t)})).sort((a, b) => a.diff - b.diff);
-  // Always show top 3 nearest
-  const toShow = scored.slice(0, 3);
+  // Always show top 4 nearest
+  const toShow = scored.slice(0, 4);
   const modeName = mode === 'carry' ? 'Carry' : 'Total';
-  const html = `<div class="mode-label">Top 3 nearest for ${modeName} ${t}m:</div>` + toShow.map(s => {
+  const html = `<div class="mode-label">Top 4 nearest for ${modeName} ${t}m:</div>` + toShow.map(s => {
     const over = s.diff > 5;
     return `<div class="card${over ? ' over' : ''}"><div class="club">${s.club}</div><div>${s.hand_position}</div><div>C ${s.carry_m} · T ${s.total_m}</div><div class="delta">${s.diff === 0 ? 'exact' : s.diff + 'm away'}${over ? ' (outside 5m)' : ''}</div></div>`;
   }).join('');
