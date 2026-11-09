@@ -42,9 +42,21 @@ button.active { background: #000; color: #fff; }
 <div id="results"></div>
 <p class="hint">~ = modelled fill/scale. Offline after first open.</p>
 <script>
-const SHOTS = [{"band_m": "230-239", "total_m": 230, "carry_m": 180, "roll_m": 50, "club": "Driver", "hand_position": "9 Deltoid", "source": "measured", "flag": "", "model_total_m": 230}];
-window.GOLF_META = {"generated": "2026-11-09T23:32:19.037316+00:00", "source": "distance-by-total-extrapolated.csv", "count": 132, "cache_version": "20261109233219"};
+let SHOTS = [];
 let mode = 'total';
+
+async function loadData() {
+  try {
+    const res = await fetch('./data.json');
+    const data = await res.json();
+    SHOTS = data.shots || [];
+    window.GOLF_META = data;
+    render();
+  } catch (e) {
+    document.getElementById('results').innerHTML = '<div class="card">Failed to load data</div>';
+  }
+}
+
 function setMode(m) {
   mode = m;
   document.getElementById('btn-carry').classList.toggle('active', m === 'carry');
@@ -56,6 +68,7 @@ function closeKeyboard() {
   if (document.activeElement) document.activeElement.blur();
 }
 function render() {
+  if (!SHOTS.length) return;
   const t = parseInt(document.getElementById('distance').value) || 0;
   if (!t) { document.getElementById('results').innerHTML = ''; return; }
   const key = mode === 'carry' ? 'carry_m' : 'total_m';
@@ -82,6 +95,7 @@ document.getElementById('distance').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') closeKeyboard();
 });
 setMode('total');
+loadData();
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
