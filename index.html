@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Golf Distance</title>
 <style>
 body { font-family: -apple-system, sans-serif; margin: 0; padding: 16px; background: #fff; color: #000; max-width: 520px; margin: 0 auto; }
@@ -12,10 +15,11 @@ button { min-height: 48px; font-size: 20px; margin: 4px; }
 button.active { background: #000; color: #fff; }
 #close-kb { background: #eee; color: #000; font-size: 16px; min-height: 40px; }
 .card { border: 2px solid #000; border-radius: 12px; padding: 12px; margin: 8px 0; }
-.card.over { border-color: #c00; color: #c00; }
+.card.over { border-color: #c00; background: #fff0f0; color: #c00; }
 .card.over .club, .card.over .delta { color: #c00; }
 .club { font-size: 48px; font-weight: 900; }
 .delta { font-size: 14px; color: #555; }
+.mode-label { font-weight: bold; margin-bottom: 4px; }
 </style>
 </head>
 <body>
@@ -45,10 +49,11 @@ function render() {
   if (!t) { document.getElementById('results').innerHTML = ''; return; }
   const key = mode === 'carry' ? 'carry_m' : 'total_m';
   const scored = SHOTS.map(s => ({...s, diff: Math.abs(s[key] - t)})).sort((a, b) => a.diff - b.diff);
-  // Always show nearest; also show any others within 5m
-  const toShow = scored.filter(s => s.diff <= 5);
-  if (toShow.length === 0 && scored.length) toShow.push(scored[0]);
-  const html = toShow.map(s => {
+  // Always show the nearest (and any others within 5m)
+  let toShow = scored.filter(s => s.diff <= 5);
+  if (toShow.length === 0) toShow = [scored[0]];
+  const modeName = mode === 'carry' ? 'Carry' : 'Total';
+  const html = `<div class="mode-label">Nearest for ${modeName} ${t}m:</div>` + toShow.map(s => {
     const over = s.diff > 5;
     return `<div class="card${over ? ' over' : ''}"><div class="club">${s.club}</div><div>${s.hand_position}</div><div>C ${s.carry_m} · T ${s.total_m}</div><div class="delta">${s.diff === 0 ? 'exact' : s.diff + 'm away'}${over ? ' (outside 5m)' : ''}</div></div>`;
   }).join('');
