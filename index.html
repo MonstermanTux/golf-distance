@@ -12,9 +12,10 @@ button { min-height: 48px; font-size: 20px; margin: 4px; }
 button.active { background: #000; color: #fff; }
 #close-kb { background: #eee; color: #000; font-size: 16px; min-height: 40px; }
 .card { border: 2px solid #000; border-radius: 12px; padding: 12px; margin: 8px 0; }
+.card.over { border-color: #c00; color: #c00; }
+.card.over .club, .card.over .delta { color: #c00; }
 .club { font-size: 48px; font-weight: 900; }
 .delta { font-size: 14px; color: #555; }
-.nomatch { padding: 12px; font-size: 18px; }
 </style>
 </head>
 <body>
@@ -44,14 +45,13 @@ function render() {
   if (!t) { document.getElementById('results').innerHTML = ''; return; }
   const key = mode === 'carry' ? 'carry_m' : 'total_m';
   const scored = SHOTS.map(s => ({...s, diff: Math.abs(s[key] - t)})).sort((a, b) => a.diff - b.diff);
-  const within = scored.filter(s => s.diff <= 5);
-  let html = '';
-  if (within.length) {
-    html = within.map(s => `<div class="card"><div class="club">${s.club}</div><div>${s.hand_position}</div><div>C ${s.carry_m} · T ${s.total_m}</div><div class="delta">${s.diff === 0 ? 'exact' : s.diff + 'm away'}</div></div>`).join('');
-  } else {
-    const nearest = scored[0];
-    html = `<div class="nomatch">No match within 5m<br>Nearest: ${nearest.club} (${nearest.hand_position}) — C ${nearest.carry_m} · T ${nearest.total_m} (${nearest.diff}m away)</div>`;
-  }
+  // Always show nearest; also show any others within 5m
+  const toShow = scored.filter(s => s.diff <= 5);
+  if (toShow.length === 0 && scored.length) toShow.push(scored[0]);
+  const html = toShow.map(s => {
+    const over = s.diff > 5;
+    return `<div class="card${over ? ' over' : ''}"><div class="club">${s.club}</div><div>${s.hand_position}</div><div>C ${s.carry_m} · T ${s.total_m}</div><div class="delta">${s.diff === 0 ? 'exact' : s.diff + 'm away'}${over ? ' (outside 5m)' : ''}</div></div>`;
+  }).join('');
   document.getElementById('results').innerHTML = html;
 }
 document.getElementById('distance').oninput = render;
