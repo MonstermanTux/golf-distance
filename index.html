@@ -6,6 +6,12 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Golf Distance">
+<meta name="theme-color" content="#ffffff">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Golf Distance</title>
 <style>
 body { font-family: -apple-system, sans-serif; margin: 0; padding: 16px; background: #fff; color: #000; max-width: 520px; margin: 0 auto; }
@@ -18,8 +24,11 @@ button.active { background: #000; color: #fff; }
 .card.over { border-color: #c00; background: #fff0f0; color: #c00; }
 .card.over .club, .card.over .delta { color: #c00; }
 .club { font-size: 36px; font-weight: 900; }
+.club.x, .pos.x { font-style: italic; }
+.xtag { font-size: 16px; font-weight: 700; color: #0a7a3e; margin-left: 6px; font-style: normal; }
 .delta { font-size: 14px; color: #555; }
 .mode-label { font-weight: bold; margin-bottom: 4px; font-size: 16px; }
+.hint { font-size: 13px; color: #555; margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -31,8 +40,10 @@ button.active { background: #000; color: #fff; }
 <button id="close-kb" onclick="closeKeyboard()">Close Keyboard</button>
 </div>
 <div id="results"></div>
+<p class="hint">~ = modelled fill/scale. Offline after first open.</p>
 <script>
-const SHOTS = [{"total_m":230,"carry_m":180,"club":"Driver","hand_position":"9 Deltoid"},{"total_m":190,"carry_m":165,"club":"4 wood","hand_position":"9 Deltoid"},{"total_m":170,"carry_m":140,"club":"Hybrid","hand_position":"9 Deltoid"},{"total_m":140,"carry_m":130,"club":"5i","hand_position":"9 Deltoid"},{"total_m":130,"carry_m":110,"club":"7i","hand_position":"8 Pit"},{"total_m":115,"carry_m":100,"club":"9i","hand_position":"9 Deltoid"},{"total_m":95,"carry_m":85,"club":"48°","hand_position":"9 Deltoid"},{"total_m":80,"carry_m":70,"club":"48°","hand_position":"8 Pit"},{"total_m":70,"carry_m":64,"club":"52°","hand_position":"8 Pit"},{"total_m":61,"carry_m":50,"club":"9i","hand_position":"6 Ribs Low"},{"total_m":50,"carry_m":44,"club":"52°","hand_position":"5 Waist"},{"total_m":40,"carry_m":37,"club":"56°","hand_position":"5 Waist"},{"total_m":30,"carry_m":21,"club":"8i","hand_position":"4 Belt"},{"total_m":20,"carry_m":15,"club":"52°","hand_position":"2 Femur"},{"total_m":10,"carry_m":7,"club":"56°","hand_position":"0 Address"}];
+const SHOTS = [{"band_m": "230-239", "total_m": 230, "carry_m": 180, "roll_m": 50, "club": "Driver", "hand_position": "9 Deltoid", "source": "measured", "flag": "", "model_total_m": 230}];
+window.GOLF_META = {"generated": "2026-11-09T23:32:19.037316+00:00", "source": "distance-by-total-extrapolated.csv", "count": 132, "cache_version": "20261109233219"};
 let mode = 'total';
 function setMode(m) {
   mode = m;
@@ -48,13 +59,21 @@ function render() {
   const t = parseInt(document.getElementById('distance').value) || 0;
   if (!t) { document.getElementById('results').innerHTML = ''; return; }
   const key = mode === 'carry' ? 'carry_m' : 'total_m';
-  const scored = SHOTS.map(s => ({...s, diff: Math.abs(s[key] - t)})).sort((a, b) => a.diff - b.diff);
-  // Always show top 4 nearest
+  const scored = SHOTS
+    .filter(s => s[key] !== null && s[key] !== undefined)
+    .map(s => ({...s, diff: Math.abs(s[key] - t)}))
+    .sort((a, b) => a.diff - b.diff || a[key] - b[key] || String(a.club).localeCompare(String(b.club)));
   const toShow = scored.slice(0, 4);
   const modeName = mode === 'carry' ? 'Carry' : 'Total';
   const html = `<div class="mode-label">Top 4 nearest for ${modeName} ${t}m:</div>` + toShow.map(s => {
     const over = s.diff > 5;
-    return `<div class="card${over ? ' over' : ''}"><div class="club">${s.club}</div><div>${s.hand_position}</div><div>C ${s.carry_m} · T ${s.total_m}</div><div class="delta">${s.diff === 0 ? 'exact' : s.diff + 'm away'}${over ? ' (outside 5m)' : ''}</div></div>`;
+    const isX = s.source === 'extrapolated' || s.source === 'corrected';
+    const clubCls = isX ? 'club x' : 'club';
+    const posCls = isX ? 'pos x' : 'pos';
+    const tag = isX ? '<span class="xtag">~</span>' : '';
+    const carry = s.carry_m === null || s.carry_m === undefined ? '—' : s.carry_m;
+    const total = s.total_m === null || s.total_m === undefined ? '—' : s.total_m;
+    return `<div class="card${over ? ' over' : ''}"><div class="${clubCls}">${s.club}${tag}</div><div class="${posCls}">${s.hand_position}</div><div>C ${carry} · T ${total}</div><div class="delta">${s.diff === 0 ? 'exact' : s.diff + 'm away'}${over ? ' (outside 5m)' : ''}</div></div>`;
   }).join('');
   document.getElementById('results').innerHTML = html;
 }
@@ -63,6 +82,11 @@ document.getElementById('distance').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') closeKeyboard();
 });
 setMode('total');
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
 </script>
 </body>
 </html>
