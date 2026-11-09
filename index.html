@@ -7,31 +7,49 @@
 <style>
 body { font-family: -apple-system, sans-serif; margin: 0; padding: 16px; background: #fff; color: #000; max-width: 520px; margin: 0 auto; }
 h1 { font-size: 22px; }
-#distance { width: 100%; font-size: 72px; text-align: center; border: 3px solid #000; border-radius: 12px; padding: 10px; }
+#distance { width: 100%; font-size: 72px; text-align: center; border: 3px solid #000; border-radius: 12px; padding: 10px; box-sizing: border-box; }
 button { min-height: 48px; font-size: 20px; margin: 4px; }
+button.active { background: #000; color: #fff; }
 .card { border: 2px solid #000; border-radius: 12px; padding: 12px; margin: 8px 0; }
 .club { font-size: 48px; font-weight: 900; }
+.delta { font-size: 14px; color: #555; }
+.nomatch { padding: 12px; font-size: 18px; }
 </style>
 </head>
 <body>
 <h1>Golf Distance</h1>
 <input id="distance" type="number" placeholder="metres" inputmode="numeric">
 <div>
-<button onclick="setMode('carry')">Carry</button>
-<button onclick="setMode('total')">Total</button>
+<button id="btn-carry" onclick="setMode('carry')">Carry</button>
+<button id="btn-total" onclick="setMode('total')">Total</button>
 </div>
 <div id="results"></div>
 <script>
 const SHOTS = [{"total_m":230,"carry_m":180,"club":"Driver","hand_position":"9 Deltoid"},{"total_m":190,"carry_m":165,"club":"4 wood","hand_position":"9 Deltoid"},{"total_m":170,"carry_m":140,"club":"Hybrid","hand_position":"9 Deltoid"},{"total_m":140,"carry_m":130,"club":"5i","hand_position":"9 Deltoid"},{"total_m":130,"carry_m":110,"club":"7i","hand_position":"8 Pit"},{"total_m":115,"carry_m":100,"club":"9i","hand_position":"9 Deltoid"},{"total_m":95,"carry_m":85,"club":"48°","hand_position":"9 Deltoid"},{"total_m":80,"carry_m":70,"club":"48°","hand_position":"8 Pit"},{"total_m":70,"carry_m":64,"club":"52°","hand_position":"8 Pit"},{"total_m":61,"carry_m":50,"club":"9i","hand_position":"6 Ribs Low"},{"total_m":50,"carry_m":44,"club":"52°","hand_position":"5 Waist"},{"total_m":40,"carry_m":37,"club":"56°","hand_position":"5 Waist"},{"total_m":30,"carry_m":21,"club":"8i","hand_position":"4 Belt"},{"total_m":20,"carry_m":15,"club":"52°","hand_position":"2 Femur"},{"total_m":10,"carry_m":7,"club":"56°","hand_position":"0 Address"}];
-let mode = 'carry';
-function setMode(m) { mode = m; render(); }
+let mode = 'total';
+function setMode(m) {
+  mode = m;
+  document.getElementById('btn-carry').classList.toggle('active', m === 'carry');
+  document.getElementById('btn-total').classList.toggle('active', m === 'total');
+  render();
+}
 function render() {
   const t = parseInt(document.getElementById('distance').value) || 0;
   if (!t) { document.getElementById('results').innerHTML = ''; return; }
-  const matches = SHOTS.filter(s => Math.abs((mode==='carry'?s.carry_m:s.total_m) - t) <= 5);
-  document.getElementById('results').innerHTML = matches.map(s => `<div class="card"><div class="club">${s.club}</div><div>${s.hand_position}</div><div>C ${s.carry_m} · T ${s.total_m}</div></div>`).join('') || '<div>No match</div>';
+  const key = mode === 'carry' ? 'carry_m' : 'total_m';
+  const scored = SHOTS.map(s => ({...s, diff: Math.abs(s[key] - t)})).sort((a, b) => a.diff - b.diff);
+  const within = scored.filter(s => s.diff <= 5);
+  let html = '';
+  if (within.length) {
+    html = within.map(s => `<div class="card"><div class="club">${s.club}</div><div>${s.hand_position}</div><div>C ${s.carry_m} · T ${s.total_m}</div><div class="delta">${s.diff === 0 ? 'exact' : s.diff + 'm away'}</div></div>`).join('');
+  } else {
+    const nearest = scored[0];
+    html = `<div class="nomatch">No match within 5m<br>Nearest: ${nearest.club} (${nearest.hand_position}) — C ${nearest.carry_m} · T ${nearest.total_m} (${nearest.diff}m away)</div>`;
+  }
+  document.getElementById('results').innerHTML = html;
 }
 document.getElementById('distance').oninput = render;
+setMode('total');
 </script>
 </body>
 </html>
